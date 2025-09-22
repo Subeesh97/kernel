@@ -65,6 +65,14 @@ scm_version()
 	if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
 	   head=$(git rev-parse --verify HEAD 2>/dev/null); then
 
+		# Get branch name, get commit sha, leave.
+		if test "$CONFIG_LOCALVERSION_BRANCH_SHA" = "y"; then
+			branch_name=$(git rev-parse --abbrev-ref HEAD)
+			last_commit=$(git rev-parse --verify --short=10 HEAD)
+			printf '%s' "-$branch_name/$last_commit"
+			return
+		fi
+
 		if [ -n "$android_release" ] && [ -n "$kmi_generation" ]; then
 			printf '%s' "-$android_release-$kmi_generation"
 		elif [ -n "$android_release" ]; then
@@ -98,8 +106,8 @@ scm_version()
 			# If we don't have a tag at all we print -g{commitish},
 			# again using exactly 12 hex chars.
 			else
-				head="$(echo $head | cut -c1-12)"
-				printf '%s%s' -g $head
+				head="$(echo $head | cut -c1-8)"
+				printf '%s%s' -@ $head
 			fi
 		fi
 
@@ -191,15 +199,6 @@ res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"
 if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
 	# full scm version string
 	res="$res$(scm_version)"
-else
-	# append a plus sign if the repository is not in a clean
-	# annotated or signed tagged state (as git describe only
-	# looks at signed or annotated tags - git tag -a/-s) and
-	# LOCALVERSION= is not specified
-	if test "${LOCALVERSION+set}" != "set"; then
-		scm=$(scm_version --short)
-		res="$res${scm:++}"
-	fi
 fi
 
 echo "$res"
